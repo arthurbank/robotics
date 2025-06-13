@@ -28,21 +28,15 @@ void setup() {
 }
 
 void loop() {
-  // Read DHT11
   float dhtTemp = dht.readTemperature();
   float dhtHumidity = dht.readHumidity();
-
-  // Read DS18B20
   ds18b20.requestTemperatures();
   float dsTemp = ds18b20.getTempCByIndex(0);
 
-  // Read Thermistor (analog raw value)
   int rawADC = analogRead(THERMISTOR_PIN);
   float thermistor_voltage = rawADC / 1023.0 * 5.0;
   float thermistor_resistance = (5.0 * seriesResistor / thermistor_voltage) - seriesResistor;
-
-  float steinhart;
-  steinhart = thermistor_resistance / nominalResistance;
+  float steinhart = thermistor_resistance / nominalResistance;
   steinhart = log(steinhart);
   steinhart /= bCoefficient;
   steinhart += 1.0 / (nominalTemperature + 273.15);
@@ -51,28 +45,22 @@ void loop() {
 
   int mq2ADC = analogRead(MQ2_PIN);
   float gas_voltage = mq2ADC / 1023.0 * 5.0;
-  float rs = (5.0 - gas_voltage) / gas_voltage * 10.0; // RS = (Vc - Vrl) / Vrl * RL
+  float rs = (5.0 - gas_voltage) / gas_voltage * 10.0;
   float ratio = rs / R0;
-
-  // LPG ppm (approximate log formula from MQ-2 datasheet)
   float ppm = pow(10, ((-log10(ratio) + 0.21) / 0.47)); 
 
-  // Print all values
-  Serial.println("------ Weather Station Data ------");
-  if (isnan(dhtTemp) || isnan(dhtHumidity)) {
-    Serial.println("DHT11 read failed!");
-  } else {
-    Serial.print("DHT11 Temp: "); Serial.print(dhtTemp); Serial.println(" °C");
-    Serial.print("DHT11 Humidity: "); Serial.print(dhtHumidity); Serial.println(" %");
-  }
-  Serial.print("DS18B20 Temp: "); Serial.print(dsTemp); Serial.println(" °C");
-  Serial.print("Thermistor Temp: ");
-  Serial.print(thermistorC);  
-  Serial.println(" °C");
-  Serial.print("Gas Concentration: ");
-  Serial.print(ppm);
-  Serial.println(" ppm");
-  Serial.println("----------------------------------\n");
+  // Print CSV line: timestamp, DHT temp, humidity, DS temp, thermistor temp, gas ppm
+  Serial.print(millis());
+  Serial.print(",");
+  Serial.print(dhtTemp);
+  Serial.print(",");
+  Serial.print(dhtHumidity);
+  Serial.print(",");
+  Serial.print(dsTemp);
+  Serial.print(",");
+  Serial.print(thermistorC);
+  Serial.print(",");
+  Serial.println(ppm);
 
-  delay(60000); // Wait one minute (60,000 milliseconds)
+  delay(60000);
 }
