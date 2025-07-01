@@ -2,65 +2,59 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define DHTPIN 2
+// DHT setup
+#define DHTPIN 4
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 
-#define DS18B20_PIN 3
-OneWire oneWire(DS18B20_PIN);
+// DS18B20 setup
+#define ONE_WIRE_BUS 5
+OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature ds18b20(&oneWire);
 
-#define THERMISTOR_PIN A0
-const float seriesResistor = 10000.0; // 10k resistor in the voltage divider
-const float nominalResistance = 10000.0; // resistance at 25°C
-const float nominalTemperature = 25.0;
-const float bCoefficient = 3950.0; // beta coefficient
-
-#define MQ2_PIN A1
-float R0 = 10.0;  // You should calibrate this in clean air
-
+// MQ-2 and Thermistor
+#define MQ2_PIN 34
+#define THERMISTOR_PIN 35
 
 void setup() {
   Serial.begin(9600);
   dht.begin();
   ds18b20.begin();
-  Serial.println("Weather Station Starting...");
 }
 
 void loop() {
+  // Read DHT values
   float dhtTemp = dht.readTemperature();
-  float dhtHumidity = dht.readHumidity();
+  float dhtHumid = dht.readHumidity();
+
+  // Read DS18B20
   ds18b20.requestTemperatures();
   float dsTemp = ds18b20.getTempCByIndex(0);
 
-  int rawADC = analogRead(THERMISTOR_PIN);
-  float thermistor_voltage = rawADC / 1023.0 * 5.0;
-  float thermistor_resistance = (5.0 * seriesResistor / thermistor_voltage) - seriesResistor;
-  float steinhart = thermistor_resistance / nominalResistance;
-  steinhart = log(steinhart);
-  steinhart /= bCoefficient;
-  steinhart += 1.0 / (nominalTemperature + 273.15);
-  steinhart = 1.0 / steinhart;
-  float thermistorC = steinhart - 273.15;
+  // Read Thermistor (dummy calculation for now)
+  int thermRaw = analogRead(THERMISTOR_PIN);
+  float thermistorTemp = (thermRaw / 4095.0) * 100.0;  // dummy Celsius
 
-  int mq2ADC = analogRead(MQ2_PIN);
-  float gas_voltage = mq2ADC / 1023.0 * 5.0;
-  float rs = (5.0 - gas_voltage) / gas_voltage * 10.0;
-  float ratio = rs / R0;
-  float ppm = pow(10, ((-log10(ratio) + 0.21) / 0.47)); 
+  // Read MQ-2
+  int mq2Raw = analogRead(MQ2_PIN);
+  float mq2ppm = mq2Raw * (1000.0 / 4095.0);  // dummy ppm con*
 
-  // Print CSV line: timestamp, DHT temp, humidity, DS temp, thermistor temp, gas ppm
-  Serial.print(millis());
-  Serial.print(",");
-  Serial.print(dhtTemp);
-  Serial.print(",");
-  Serial.print(dhtHumidity);
-  Serial.print(",");
-  Serial.print(dsTemp);
-  Serial.print(",");
-  Serial.print(thermistorC);
-  Serial.print(",");
-  Serial.println(ppm);
+  // Print to Serial Monitor (Human Readable)
+  // Serial.println("=== Sensor Readings ===");
+  // Serial.print("DHT Temp (°C): "); Serial.println(dhtTemp);
+  // Serial.print("DHT Humidity (%): "); Serial.println(dhtHumid);
+  // Serial.print("DS18B20 Temp (°C): "); Serial.println(dsTemp);
+  // Serial.print("Thermistor Temp (°C): "); Serial.println(thermistorTemp);
+  // Serial.print("MQ-2 Raw: "); Serial.println(mq2Raw);
+  // Serial.print("MQ-2 PPM (approx): "); Serial.println(mq2ppm);
+  // Serial.println();
 
-  delay(60000);
+  // Send CSV line to serial (Python app will read and log it)
+  Serial.print(0); Serial.print(",");
+  Serial.print(dhtTemp); Serial.print(",");
+  Serial.print(dhtHumid); Serial.print(",");
+  Serial.print(dsTemp); Serial.print(",");
+  Serial.print(thermistorTemp); Serial.print(",");
+  Serial.println(mq2ppm);  // ends the line
+
 }
