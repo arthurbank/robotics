@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 # Set the correct port below. On Windows, it's usually COM3, COM4, etc.
-ser = serial.Serial('COM4', 9600)  # Change to your Arduino port
+ser = serial.Serial('COM7', 9600)  # Change to your Arduino port
 filename = os.path.expanduser("~/weather_data.csv")
 
 # Write headers if file doesn't exist
